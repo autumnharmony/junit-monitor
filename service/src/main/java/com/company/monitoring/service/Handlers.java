@@ -41,7 +41,6 @@ public class Handlers {
     }
 
     Handlers(TaskExecutor<String> taskExecutor) {
-
         log.debug("init...");
         loadHandlers(System.getProperty(HANDLERS_MODE, HANDLERS_MODE_AUTO));
         this.taskExecutor = taskExecutor;

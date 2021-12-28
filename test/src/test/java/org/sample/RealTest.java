@@ -55,6 +55,8 @@ public class RealTest {
     @Test
     void realTest() throws NotBoundException, IOException {
         String dir = System.getProperty("user.dir");
+        String streamingDir = Paths.get(dir, "test", EXTRACT_FILE_NAME, "/streaming").toString();
+        String graphxDir = Paths.get(dir, "test", EXTRACT_FILE_NAME, "/graphx").toString();
 
         if (Files.notExists(Paths.get(FILE_NAME))) {
             // download project to run tests
@@ -62,10 +64,11 @@ public class RealTest {
             FileUtils.copyURLToFile(new URL(FILE_URL), new File(FILE_NAME), CONNECT_TIMEOUT, READ_TIMEOUT);
             log.debug("Downloading mvn project done");
         }
-
-        if (Files.notExists(Paths.get(EXTRACT_FILE_NAME))) {
+        Path test = Paths.get(dir, "test");
+        if (Files.notExists(Paths.get(test.toString(), EXTRACT_FILE_NAME))) {
             log.debug("Decompressing mvn project ...");
-            decompressTarGzipFile(Paths.get(FILE_NAME), Paths.get(dir, "test"));
+
+            decompressTarGzipFile(Paths.get(FILE_NAME), test);
             log.debug("Decompressing mvn project done");
         }
 
@@ -73,32 +76,31 @@ public class RealTest {
         log.debug("Launching monitoring service...");
         MonitoringMain.main(new String[0]);
         log.debug("Launching monitoring service done");
-
-
         log.debug("Getting monitoring service remote from RMI registry...");
         Registry registry = LocateRegistry.getRegistry();
         Monitoring monitoring = (Monitoring) registry.lookup(Monitoring.SERVICE_NAME);
         log.debug("Getting monitoring service remote from RMI registry done");
 
-
-        Path path = FileSystems.getDefault().getPath(dir, "test", EXTRACT_FILE_NAME, "/streaming/target/surefire-reports");
-
+        Path path = FileSystems.getDefault().getPath(streamingDir, "/target/surefire-reports");
+        Path path2 = FileSystems.getDefault().getPath(graphxDir, "/target/surefire-reports");
 
         monitoring.assignHandler("xml", "com.company.monitoring.handlers.JunitTestReportHandler");
         Path reportTxt = Paths.get("report.txt");
+        Files.createFile(reportTxt);
         monitoring.configureHandler("xml", new Object[]{reportTxt.toString()});
 
-
+        log.debug("mvn clean...");
         mvnClean(dir);
+        log.debug("mvn clean done");
 
         monitoring.monitorDir(path.toAbsolutePath().toString());
-
+        monitoring.monitorDir(path2.toAbsolutePath().toString());
         monitoring.start();
 
         Set<TestSuite> testSuites = ConcurrentHashMap.newKeySet();
-
         try {
-            Process start = mvnTest(dir);
+            Process start = mvnTest(streamingDir);
+            Process start2 = mvnTest(graphxDir);
 
             await().forever().pollInterval(10, TimeUnit.SECONDS).until(() -> {
                 try {
@@ -111,7 +113,7 @@ public class RealTest {
                     ex.printStackTrace();
                 }
 
-                return !start.isAlive();
+                return !start.isAlive() /*&& !start2.isAlive()*/;
             });
             monitoring.stop();
         } catch (Exception ex) {
@@ -133,7 +135,7 @@ public class RealTest {
             builder.command("sh", "-c", cmd);
         }
 
-        Path some = FileSystems.getDefault().getPath(dir, "test", EXTRACT_FILE_NAME, "/streaming");
+        Path some = FileSystems.getDefault().getPath(dir);
         builder.directory(some.toFile());
 
 

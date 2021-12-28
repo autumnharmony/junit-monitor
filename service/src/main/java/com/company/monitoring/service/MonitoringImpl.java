@@ -296,7 +296,7 @@ public class MonitoringImpl implements Monitoring {
     }
 
     @Override
-    public void assignHandler(String type, String clazz, Object[] extra) throws RemoteException {
+    public void assignHandler(String type, String clazz, Object[] extra) {
         log.info("assignHandler type: {}, class: {}, extra: {}", type, clazz, extra);
 
         try {
@@ -323,12 +323,12 @@ public class MonitoringImpl implements Monitoring {
     }
 
     @Override
-    public Handler getHandler(String type) throws RemoteException {
+    public Handler getHandler(String type) {
         return handlers.get(type);
     }
 
     @Override
-    public void configureHandler(String type, Object[] objects) throws RemoteException {
+    public void configureHandler(String type, Object[] objects){
         Handler handler = handlers.get(type);
         if (handler == null) {
             throw new IllegalStateException(String.format("Can't find handler for type %s", type));
