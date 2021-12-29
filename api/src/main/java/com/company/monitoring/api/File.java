@@ -2,6 +2,9 @@ package com.company.monitoring.api;
 
 import lombok.ToString;
 
+/**
+ * File
+ */
 @ToString(exclude = "content")
 public class File {
     private String path;

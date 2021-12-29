@@ -20,6 +20,7 @@ import java.nio.file.*;
 import java.rmi.NotBoundException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -85,9 +86,10 @@ public class RealTest {
         Path path2 = FileSystems.getDefault().getPath(graphxDir, "/target/surefire-reports");
 
         monitoring.assignHandler("xml", "com.company.monitoring.handlers.JunitTestReportHandler");
-        Path reportTxt = Paths.get("report.txt");
-        Files.createFile(reportTxt);
-        monitoring.configureHandler("xml", new Object[]{reportTxt.toString()});
+        Path reportJson = Paths.get("report.json");
+        Files.deleteIfExists(reportJson);
+        Files.createFile(reportJson);
+        monitoring.configureHandler("xml", new Object[]{reportJson.toString()});
 
         log.debug("mvn clean...");
         mvnClean(dir);
@@ -104,7 +106,7 @@ public class RealTest {
 
             await().forever().pollInterval(10, TimeUnit.SECONDS).until(() -> {
                 try {
-                    Report readReport = gson.fromJson(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(reportTxt))), Report.class);
+                    Report readReport = gson.fromJson(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(reportJson))), Report.class);
                     log.info("ANBO reports test suites size {}", testSuites.size());
                     if (readReport != null) {
                         testSuites.addAll(readReport.getTestSuites());

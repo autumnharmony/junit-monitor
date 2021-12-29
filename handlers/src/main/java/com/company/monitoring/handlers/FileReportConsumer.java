@@ -40,11 +40,10 @@ class FileReportConsumer implements Consumer<Report> {
             if (reportAggr == null) reportAggr = new Report();
             reportAggr.getTestSuites().addAll(report.getTestSuites());
             String json = gson.toJson(reportAggr);
-            log.debug("ANBO json: {}", json);
+            log.debug("json: {}", json);
             Files.writeString(outputFilePath, json, CREATE, TRUNCATE_EXISTING, WRITE);
         } catch (IOException e) {
             log.warn("Exception {}", e);
-            e.printStackTrace();
         }
     }
 }

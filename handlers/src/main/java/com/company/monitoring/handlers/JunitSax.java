@@ -3,22 +3,21 @@ package com.company.monitoring.handlers;
 import com.company.monitoring.api.Report;
 import com.company.monitoring.api.TestCase;
 import com.company.monitoring.api.TestSuite;
+import lombok.extern.slf4j.Slf4j;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
+@Slf4j
 public class JunitSax extends DefaultHandler {
 
     private StringBuilder currentValue = new StringBuilder();
-
+    private Report report = new Report();
+    private TestSuite currentTestSuite;
+    private TestCase currentTestCase;
 
     public Report getReport() {
         return report;
     }
-
-
-    Report report = new Report();
-    TestSuite currentTestSuite;
-    TestCase currentTestCase;
 
     @Override
     public void startElement(
@@ -31,7 +30,7 @@ public class JunitSax extends DefaultHandler {
         currentValue.setLength(0);
 
 
-        System.out.printf("Start Element : %s%n", qName);
+        log.debug("Start Element : {}", qName);
 
         if (qName.equalsIgnoreCase("testsuite")) {
             // get tag's attribute by name
@@ -40,7 +39,7 @@ public class JunitSax extends DefaultHandler {
             currentTestSuite = new TestSuite(name);
 
             report.getTestSuites().add(currentTestSuite);
-            System.out.printf("%s testsuite", name);
+            log.debug("{} testsuite", name);
         }
 
         if (qName.equalsIgnoreCase("testcase")) {
@@ -48,7 +47,7 @@ public class JunitSax extends DefaultHandler {
             String name = attributes.getValue("name");
             String classname = attributes.getValue("classname");
             currentTestCase = new TestCase(name, classname);
-            System.out.printf("%s testcase", name);
+            log.debug("{} testcase", name);
 
             if (currentTestSuite != null && currentTestCase != null) {
                 currentTestSuite.getTestCases().add(currentTestCase);
@@ -63,7 +62,7 @@ public class JunitSax extends DefaultHandler {
                            String localName,
                            String qName) {
 
-        System.out.printf("End Element : %s%n", qName);
+        log.debug("End Element : {}", qName);
 
         if (qName.equalsIgnoreCase("testsuite")) {
             currentTestSuite = null;
@@ -73,15 +72,6 @@ public class JunitSax extends DefaultHandler {
             currentTestCase = null;
 
         }
-//
-//        if (qName.equalsIgnoreCase("salary")) {
-//            System.out.printf("Salary : %s%n", currentValue.toString());
-//        }
-//
-//        if (qName.equalsIgnoreCase("bio")) {
-//            System.out.printf("Bio : %s%n", currentValue.toString());
-//        }
-
     }
 
     // http://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html#characters%28char%5B%5D,%20int,%20int%29

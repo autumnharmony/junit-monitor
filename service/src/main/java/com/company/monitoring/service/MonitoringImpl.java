@@ -201,7 +201,7 @@ public class MonitoringImpl implements Monitoring {
                 Watchable watchable = poll.watchable();
 
                 log.info("watchable: {}", watchable);
-                log.info("pollEvents: {}", watchEvents.stream().map(e -> e.kind() + "" + e.context()).collect(Collectors.toList()));
+                log.info("pollEvents: {}", watchEvents.stream().map(e -> e.kind() + " " + e.context()).collect(Collectors.toList()));
                 if (pathToDir.containsKey(dirPath)) {
                     Dir dir = pathToDir.get(dirPath);
                     if (dir.isActive()) {

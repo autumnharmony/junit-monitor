@@ -5,6 +5,10 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
+/**
+ * Test case info
+ * Contains name and className
+ */
 @Data
 @RequiredArgsConstructor
 @EqualsAndHashCode

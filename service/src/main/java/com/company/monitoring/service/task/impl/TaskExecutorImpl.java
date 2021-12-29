@@ -51,23 +51,6 @@ public class TaskExecutorImpl<Key> implements TaskExecutor<Key> {
         }
     }
 
-//    private Task wrapLogging(Task<Key> task) {
-//        return new Task() {
-//            @Override
-//            public Object getKey() {
-//                return task.getKey();
-//            }
-//
-//            @Override
-//            public void run() {
-//                logger.info("Start task " + task.getKey());
-//                task.run();
-//                logger.info("Finish task " + task.getKey());
-//
-//            }
-//        };
-//    }
-
     @Override
     public void cancelTask(Key key) {
         log.info("cancel task {}", key);

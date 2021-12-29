@@ -7,6 +7,10 @@ import lombok.RequiredArgsConstructor;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+/**
+ * Result of monitoring process
+ * Contains info about test suites
+ */
 @Data
 @RequiredArgsConstructor
 @EqualsAndHashCode

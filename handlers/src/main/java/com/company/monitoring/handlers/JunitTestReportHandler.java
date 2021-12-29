@@ -49,16 +49,20 @@ public class JunitTestReportHandler implements Handler<File>, Configurable, Seri
     }
 
     @Override
-    public void configure(Object[] objects) {
-        if (objects.length == 1) {
-            Object object = objects[0];
+    public void configure(Object[] data) {
+        if (data.length == 1) {
+            Object object = data[0];
             if (object instanceof String) {
                 String filePathString = (String) object;
                 setReportConsumer(new FileReportConsumer(Paths.get(filePathString)));
-            }
-            if (object instanceof Path) {
+            } else if (object instanceof Path) {
                 setReportConsumer(new FileReportConsumer((Path) object));
+            } else {
+                // throw maybe
+                log.warn("Cant configure, unexpected arguments");
             }
+        } else {
+            log.warn("Cant configure, unexpected arguments");
         }
     }
 
@@ -66,10 +70,11 @@ public class JunitTestReportHandler implements Handler<File>, Configurable, Seri
         this.reportConsumer = reportConsumer;
     }
 
-    class DefaultReportConsumer implements Consumer<Report> {
+    @Slf4j
+    static class DefaultReportConsumer implements Consumer<Report> {
         @Override
         public void accept(Report report) {
-            System.out.println(report);
+            log.info(report.toString());
         }
     }
 }

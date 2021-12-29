@@ -14,6 +14,4 @@ public class FileHandlerTask extends HandlerTask<File, String> {
     public String getKey() {
         return getData().getPath().toString();
     }
-
-
 }

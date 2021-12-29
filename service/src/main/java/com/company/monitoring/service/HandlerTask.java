@@ -25,5 +25,4 @@ public abstract class HandlerTask<T, KEY> implements Task<KEY> {
     public void run() {
         handler.handle(data);
     }
-
 }

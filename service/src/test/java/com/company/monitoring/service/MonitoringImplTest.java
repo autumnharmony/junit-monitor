@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class MonitoringImplTest {
 
-    public static final int VERIFY_TIMEOUT = 90000;
+    public static final int VERIFY_TIMEOUT = 10000;
     MonitoringImpl monitoring;
 
     ExecutorService watchServiceExecutor;
@@ -110,42 +110,12 @@ class MonitoringImplTest {
         monitoring.stop();
     }
 
-    @Disabled
-    @Test
-    void submittedToFsChangesExecutorTest() {
-        WatchKey watchKey = mock(WatchKey.class);
-        Path path = mock(Path.class);
-        when(path.toString()).thenReturn("path");
-        when(watchKey.watchable()).thenReturn(path);
-
-        when(watchService.poll()).thenReturn(watchKey).thenReturn(null);
-        doNothing().when(monitoring).registerNow(any());
-
-        when(fsChangesExecutor.submit(any(Runnable.class))).thenAnswer(new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
-                Runnable runnable = invocationOnMock.getArgument(0);
-                runnable.run();
-                return mock(Future.class);
-            }
-        });
-        monitoring.monitorDir("path");
-        monitoring.start();
-
-        ArgumentCaptor<Runnable> argumentCaptor = ArgumentCaptor.forClass(Runnable.class);
-        verify(fsChangesExecutor, timeout(5000)).submit(argumentCaptor.capture());
-        Runnable value = argumentCaptor.getValue();
-        System.out.println(value);
-    }
-
     @Nested
     class MoreReal {
 
         @Test
         void name(@TempDir Path dir) throws IOException {
-
             monitoring.shutdown();
-
             watchServiceExecutor = Executors.newSingleThreadExecutor();
             WatchService watchService = FileSystems.getDefault().newWatchService();
             fsChangesExecutor = Executors.newFixedThreadPool(3);
@@ -168,7 +138,6 @@ class MonitoringImplTest {
 
 
             await().pollDelay(5, TimeUnit.SECONDS).until(() -> true);
-
             verify(handler, timeout(VERIFY_TIMEOUT).times(1)).handle(ArgumentMatchers.argThat(file -> file.getName().equals("1.xml")));
             monitoring.stop();
             Files.writeString(file2, "<test/>");
@@ -187,15 +156,12 @@ class MonitoringImplTest {
             Handlers handlers = spy(new Handlers());
             monitoring = spy(new MonitoringImpl(Executors.newSingleThreadExecutor(), watchService, Executors.newFixedThreadPool(3), handlers));
 
-
-
             String dirPath = dir.toString();
             TestHandler handler = spy(new TestHandler());
 
             monitoring.assignHandler("xml", handler);
             monitoring.monitorDir(dirPath);
             monitoring.start();
-//        await().pollDelay(10, TimeUnit.SECONDS).timeout(20, TimeUnit.SECONDS).until(() -> true);
 
             System.out.println("creating file 3.xml");
             Path file1 = Files.createFile(Paths.get(dirPath, "3.xml"));
@@ -213,13 +179,12 @@ class MonitoringImplTest {
             Files.writeString(file2, "<test/>");
             System.out.println("written file 4.xml");
 
-//        monitoring.stop();
-
             ArgumentCaptor<com.company.monitoring.api.File> captor = ArgumentCaptor.forClass(com.company.monitoring.api.File.class);
 
             verify(handler, timeout(VERIFY_TIMEOUT).times(2)).handle(captor.capture());
 
             org.assertj.core.api.Assertions.assertThat(captor.getAllValues()).hasSize(2).extracting(f -> f.getName()).containsOnly("3.xml", "4.xml");
+
 
         }
 

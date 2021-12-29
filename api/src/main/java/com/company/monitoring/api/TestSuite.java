@@ -8,6 +8,10 @@ import lombok.RequiredArgsConstructor;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+/**
+ * Test suite info
+ * Contains name and test cases
+ */
 @Data
 @RequiredArgsConstructor
 @EqualsAndHashCode
