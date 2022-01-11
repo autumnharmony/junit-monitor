@@ -10,6 +10,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,12 +53,12 @@ class MoreRealTest {
 
         Path file1 = Files.createFile(Paths.get(dirPath, "1.xml"));
         Path file2 = Files.createFile(Paths.get(dirPath, "2.xml"));
-        Files.writeString(file1, "<test/>");
+        Files.write(file1, "<test/>".getBytes(StandardCharsets.UTF_8));
 
         await().pollDelay(5, TimeUnit.SECONDS).until(() -> true);
         verify(handler, timeout(VERIFY_TIMEOUT).times(1)).handle(ArgumentMatchers.argThat(file -> file.getName().equals("1.xml")));
         monitoring.stop();
-        Files.writeString(file2, "<test/>");
+        Files.write(file2, "<test/>".getBytes(StandardCharsets.UTF_8));
         verify(handler, timeout(VERIFY_TIMEOUT).times(0)).handle(ArgumentMatchers.argThat(file -> file.getName().equals("2.xml")));
     }
 
@@ -85,11 +86,11 @@ class MoreRealTest {
         System.out.println("created file 4.xml");
 
         System.out.println("writing file 3.xml");
-        Files.writeString(file1, "<test/>");
+        writeString(file1, "<test/>");
         System.out.println("written file 3.xml");
 
         System.out.println("writing file 4.xml");
-        Files.writeString(file2, "<test/>");
+        writeString(file2, "<test/>");
         System.out.println("written file 4.xml");
 
         await().atMost(20, TimeUnit.SECONDS).until(() -> arguments.size() >= 2);
@@ -117,6 +118,10 @@ class MoreRealTest {
 
         Files.deleteIfExists(dir);
         await().timeout(5, TimeUnit.SECONDS).until(() -> Files.exists(dir));
+    }
+
+    private void writeString(Path path, String string) throws IOException {
+        Files.write(path, string.getBytes(StandardCharsets.UTF_8));
     }
 }
 

@@ -8,20 +8,43 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.*;
-import java.rmi.Remote;
-import java.rmi.RemoteException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.nio.file.Watchable;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static java.nio.file.StandardWatchEventKinds.*;
+import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 
 @Slf4j
 public class MonitoringImpl implements Monitoring {
+
+    public enum State {
+        STARTING(1),
+        RUNNING(2),
+        STOPPING(3),
+        STOPPED(4);
+
+        private final int value;
+
+        State(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+    }
 
     private WatchService watchService;
     private final ExecutorService watchServiceExecutor;
@@ -33,7 +56,6 @@ public class MonitoringImpl implements Monitoring {
     private final Map<Dir, WatchKey> watchKeys = new ConcurrentHashMap<>();
 
     private final AtomicBoolean needStop = new AtomicBoolean(false);
-
     private final AtomicReference<State> state = new AtomicReference<>(State.STOPPED);
     private final Set<Future> futures = ConcurrentHashMap.newKeySet();
 
@@ -53,39 +75,17 @@ public class MonitoringImpl implements Monitoring {
         this.watchService = watchService;
     }
 
-    public enum State {
-        STARTING(1),
-        RUNNING(2),
-        STOPPING(3),
-        STOPPED(4);
-
-        private final int value;
-
-        private State(int value) {
-            this.value = value;
-        }
-
-        public int getValue() {
-            return value;
-        }
-
-    }
-
     public MonitoringImpl() {
         handlers = new Handlers();
-        fsChangesExecutor = Executors.newCachedThreadPool();
-        watchServiceExecutor = Executors.newCachedThreadPool(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable runnable) {
-                Thread thread = new Thread(runnable);
-                thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread thread, Throwable throwable) {
-                        log.error("uncaughtException {}, {}", thread, throwable);
-                    }
-                });
-                return thread;
-            }
+        fsChangesExecutor = Executors.newCachedThreadPool(runnable -> {
+            Thread thread = new Thread(runnable);
+            thread.setName(String.format("%s-%s", "fsChangesExecutor", UUID.randomUUID()));
+            return thread;
+        });
+        watchServiceExecutor = Executors.newCachedThreadPool(runnable -> {
+            Thread thread = new Thread(runnable);
+            thread.setName(String.format("%s-%s", "watchServiceExecutor", UUID.randomUUID()));
+            return thread;
         });
     }
 
@@ -100,7 +100,7 @@ public class MonitoringImpl implements Monitoring {
     @Override
     public void monitorDir(String pathString) {
         log.debug("monitorDir {}", pathString);
-        Dir dir = pathToDir.computeIfAbsent(pathString, string -> createDir(string));
+        Dir dir = pathToDir.computeIfAbsent(pathString, this::createDir);
 
         if (!isRunning()) {
             registerLater(dir);
@@ -149,7 +149,7 @@ public class MonitoringImpl implements Monitoring {
     }
 
     WatchKey register(String path) throws IOException {
-        return Path.of(path).register(watchService, ENTRY_MODIFY);
+        return Paths.get(path).register(watchService, ENTRY_MODIFY);
     }
 
     void registerLater(Dir dir) {
@@ -177,9 +177,9 @@ public class MonitoringImpl implements Monitoring {
     @Override
     public void start() {
         log.debug("start");
-        State oldState = state.compareAndExchange(State.STOPPED, State.STARTING);
-        if (oldState.equals(State.STOPPED)) {
-            log.info("oldState {}", oldState);
+
+        if (state.compareAndSet(State.STOPPED, State.STARTING)) {
+            log.info("oldState {}", State.STOPPED);
             startImpl();
             state.set(State.RUNNING);
             log.info("newState {}", state.get());
@@ -221,7 +221,7 @@ public class MonitoringImpl implements Monitoring {
                     Dir dir = pathToDir.get(dirPath);
                     if (dir.isActive()) {
                         log.info("dir is active");
-                        Path watchablePath = Path.of(((Path) poll.watchable()).toString());
+                        Path watchablePath = Paths.get(((Path) poll.watchable()).toString());
                         List<WatchEvent<?>> events = new ArrayList<>(watchEvents);
                         if (!events.isEmpty()) {
                             log.info("submit to fsChangesExecutor {}, events {}", poll, watchEvents.stream().map(event -> event.context() + ", " + event.kind()).map(Objects::toString).collect(Collectors.joining("\n")));
@@ -241,30 +241,18 @@ public class MonitoringImpl implements Monitoring {
                     }
                 }
             }
-//            running.set(false);
         });
-//        running.set(true);
         log.info("Server started");
 
-        dirsToRegister.forEach(dir -> registerNow(dir));
+        dirsToRegister.forEach(this::registerNow);
         dirsToRegister.clear();
-    }
-
-    public AtomicBoolean getNeedStop() {
-        return needStop;
-    }
-
-    private WatchService createWatchService() throws IOException {
-        log.debug("creating watch service");
-        return FileSystems.getDefault().newWatchService();
     }
 
     @Override
     public void stop() {
         log.debug("stop");
-        State oldState = state.compareAndExchange(State.RUNNING, State.STOPPING);
-        if (State.RUNNING.equals(oldState)) {
-            log.info("oldState {}", oldState);
+        if (state.compareAndSet(State.RUNNING, State.STOPPING)) {
+            log.info("oldState {}", State.RUNNING);
             stopImpl();
             state.set(State.STOPPED);
             log.info("newState {}", state.get());
@@ -279,11 +267,10 @@ public class MonitoringImpl implements Monitoring {
         log.debug("needStop set to true");
 
         // unregister
-        pathToDir.values().forEach(v -> forgetDir(v));
+        pathToDir.values().forEach(this::forgetDir);
         dirsToRegister.addAll(pathToDir.values());
         pathToDir.clear();
     }
-
 
     @Override
     public void shutdown() {
@@ -351,6 +338,15 @@ public class MonitoringImpl implements Monitoring {
         if (handler instanceof Configurable) {
             ((Configurable) handler).configure(objects);
         }
+    }
+
+    public AtomicBoolean getNeedStop() {
+        return needStop;
+    }
+
+    private WatchService createWatchService() throws IOException {
+        log.debug("creating watch service");
+        return FileSystems.getDefault().newWatchService();
     }
 
     void handlePoll(Path path, List<WatchEvent<?>> watchEvents) {

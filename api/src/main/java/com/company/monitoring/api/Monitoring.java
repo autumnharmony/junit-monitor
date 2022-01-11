@@ -15,6 +15,7 @@ public interface Monitoring extends Remote {
     /**
      * Add directory for monitoring
      * If monitoring is not in running state, it will be added right after starting
+     *
      * @param path path to directory
      * @throws RemoteException
      */
@@ -23,6 +24,7 @@ public interface Monitoring extends Remote {
     /**
      * Remove directory from monitoring
      * All files in according directory which will be created or modified after invocation will be ignored
+     *
      * @param path
      * @throws RemoteException
      */
@@ -30,12 +32,14 @@ public interface Monitoring extends Remote {
 
     /**
      * Shutdown all monitoring without caring about not processed yet files
+     *
      * @throws RemoteException
      */
     void shutdown() throws RemoteException;
 
     /**
      * Stop all monitoring, all created but not processed files will be processed
+     *
      * @throws RemoteException
      */
     void stop() throws RemoteException;
@@ -43,6 +47,7 @@ public interface Monitoring extends Remote {
     /**
      * Start monitoring directories which already added by {@link Monitoring#monitorDir(java.lang.String)}
      * New directories can be added also after start method
+     *
      * @throws RemoteException
      */
     void start() throws RemoteException;
@@ -51,7 +56,8 @@ public interface Monitoring extends Remote {
      * Assign handler to type
      * Handler is mapped to file extension
      * {@see com.company.JunitTestReportHandler}
-     * @param type file extension
+     *
+     * @param type  file extension
      * @param clazz handler class
      * @throws RemoteException
      */
@@ -61,7 +67,8 @@ public interface Monitoring extends Remote {
      * Assign handler to type
      * Handler is mapped to file extension
      * {@see com.company.JunitTestReportHandler}
-     * @param type file extension
+     *
+     * @param type  file extension
      * @param clazz handler class
      * @param extra extra params to init handler
      * @throws RemoteException
@@ -72,7 +79,8 @@ public interface Monitoring extends Remote {
      * Assign handler to type
      * Handler is mapped to file extension
      * {@see com.company.JunitTestReportHandler}
-     * @param type file extension
+     *
+     * @param type    file extension
      * @param handler handler class
      * @throws RemoteException
      */
@@ -80,6 +88,7 @@ public interface Monitoring extends Remote {
 
     /**
      * Revoke handler
+     *
      * @param type file extension
      * @throws RemoteException
      */
@@ -87,11 +96,25 @@ public interface Monitoring extends Remote {
 
     /**
      * Get handler by type
+     *
      * @param type
      * @return
      * @throws RemoteException
      */
     Handler getHandler(String type) throws RemoteException;
 
+    /**
+     * For extensions
+     * @param type type of handler to configura
+     * @param objects configuration data
+     * @throws RemoteException
+     */
     void configureHandler(String type, Object[] objects) throws RemoteException;
+
+    /**
+     * Check if there are some work in progress
+     * @return true if there are not finished work
+     * @throws RemoteException
+     */
+    boolean isInProgress() throws RemoteException;
 }

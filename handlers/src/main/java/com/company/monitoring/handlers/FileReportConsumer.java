@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
@@ -24,7 +25,7 @@ class FileReportConsumer implements Consumer<Report> {
         if (Files.exists(outputFilePath)) {
             // clear content
             try {
-                Files.writeString(outputFilePath, "", CREATE, TRUNCATE_EXISTING);
+                Files.write(outputFilePath, "".getBytes(StandardCharsets.UTF_8), CREATE, TRUNCATE_EXISTING);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -41,7 +42,7 @@ class FileReportConsumer implements Consumer<Report> {
             reportAggr.getTestSuites().addAll(report.getTestSuites());
             String json = gson.toJson(reportAggr);
             log.debug("json: {}", json);
-            Files.writeString(outputFilePath, json, CREATE, TRUNCATE_EXISTING, WRITE);
+            Files.write(outputFilePath, json.getBytes(StandardCharsets.UTF_8), CREATE, TRUNCATE_EXISTING, WRITE);
         } catch (IOException e) {
             log.warn("Exception {}", e);
         }

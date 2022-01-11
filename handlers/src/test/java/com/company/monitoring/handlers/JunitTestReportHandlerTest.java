@@ -4,14 +4,18 @@ import com.company.monitoring.api.Report;
 import com.company.monitoring.api.TestCase;
 import com.company.monitoring.api.TestSuite;
 import com.company.monitoring.api.File;
+import org.apache.tools.ant.util.FileUtils;
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ObjectAssert;
+import org.assertj.core.util.Streams;
 import org.junit.jupiter.api.Test;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +28,7 @@ public class JunitTestReportHandlerTest {
     @Test
     public void testName() throws IOException, ParserConfigurationException, SAXException {
 
-        byte[] bytes = getClass().getClassLoader().getResourceAsStream(XML1).readAllBytes();
+        byte[] bytes = getBytes(XML1);
         JunitTestReportHandler handler = new JunitTestReportHandler();
         List<Report> reports = new ArrayList<>();
         handler.setReportConsumer(report -> reports.add(report));
@@ -95,7 +99,9 @@ public class JunitTestReportHandlerTest {
 
     }
 
-    private byte[] getBytes(String file) throws IOException {
-        return getClass().getClassLoader().getResourceAsStream(file).readAllBytes();
+    private byte[] getBytes(String filePath) throws IOException {
+        URL resource = getClass().getClassLoader().getResource(filePath);
+        java.io.File file = new java.io.File(resource.getFile());
+        return Files.readAllBytes(file.toPath());
     }
 }

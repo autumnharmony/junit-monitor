@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Collections;
 
@@ -89,7 +90,7 @@ class HandlersTest {
         String fileName = "file.xml";
         Path filePath = Paths.get(dirPath.toString(), fileName);
         Path xmlFile = Files.createFile(filePath);
-        Files.writeString(xmlFile, "<test/>", StandardOpenOption.APPEND);
+        Files.write(xmlFile, "<test/>".getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
 
         WatchEvent watchEvent = mock(WatchEvent.class);
         when(watchEvent.kind()).thenReturn(StandardWatchEventKinds.ENTRY_MODIFY);
@@ -109,7 +110,7 @@ class HandlersTest {
         String fileName = "file.xml";
         Path filePath = Paths.get(dirPath.toString(), fileName);
         Path xmlFile = Files.createFile(filePath);
-        Files.writeString(xmlFile, "<test/>", StandardOpenOption.WRITE);
+        Files.write(xmlFile, "<test/>".getBytes(StandardCharsets.UTF_8), StandardOpenOption.WRITE);
 
         WatchEvent watchEvent = mock(WatchEvent.class);
         when(watchEvent.kind()).thenReturn(StandardWatchEventKinds.ENTRY_MODIFY);
@@ -118,7 +119,7 @@ class HandlersTest {
 
         handlers.handleEvents(dir, dirPath, Collections.singletonList(watchEvent));
 
-        Files.writeString(xmlFile, "<test/>", StandardOpenOption.WRITE);
+        Files.write(xmlFile, "<test/>".getBytes(StandardCharsets.UTF_8), StandardOpenOption.WRITE);
         handlers.handleEvents(dir, dirPath, Collections.singletonList(watchEvent));
 
         // todo

@@ -1,1 +1,1 @@
-com.company.monitoring.handlers.groovy.JunitTestReportHandler
+com.company.monitoring.handlers.JunitTestReportHandler

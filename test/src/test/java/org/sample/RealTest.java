@@ -3,6 +3,7 @@ package org.sample;
 import com.company.monitoring.api.Report;
 import com.company.monitoring.api.TestSuite;
 import com.company.monitoring.api.Monitoring;
+import com.company.monitoring.handlers.JunitTestReportHandler;
 import com.company.monitoring.service.Handlers;
 import com.company.monitoring.service.MonitoringMain;
 import com.google.gson.Gson;
@@ -12,6 +13,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
@@ -33,6 +35,7 @@ import static org.awaitility.Awaitility.await;
  */
 
 @Slf4j
+@Disabled
 public class RealTest {
 
     private static final String JDK_HOME = "/usr/lib/jvm/java-1.11.0-openjdk-amd64";
@@ -41,6 +44,7 @@ public class RealTest {
     private static final String EXTRACT_FILE_NAME = "spark-3.2.0";
     private static final int CONNECT_TIMEOUT = 5000;
     private static final int READ_TIMEOUT = 5000;
+    public static final int EXPECTED = 64;
     private Gson gson;
 
 
@@ -99,30 +103,26 @@ public class RealTest {
         monitoring.monitorDir(path2.toAbsolutePath().toString());
         monitoring.start();
 
-        Set<TestSuite> testSuites = ConcurrentHashMap.newKeySet();
         try {
             Process start = mvnTest(streamingDir);
             Process start2 = mvnTest(graphxDir);
 
-            await().forever().pollInterval(10, TimeUnit.SECONDS).until(() -> {
-                try {
-                    Report readReport = gson.fromJson(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(reportJson))), Report.class);
-                    log.info("ANBO reports test suites size {}", testSuites.size());
-                    if (readReport != null) {
-                        testSuites.addAll(readReport.getTestSuites());
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
+            await().forever().pollInterval(1, TimeUnit.SECONDS).until(() -> !(start.isAlive() || start2.isAlive()) && !monitoring.isInProgress());
 
-                return !start.isAlive() /*&& !start2.isAlive()*/;
-            });
-            monitoring.stop();
+            try {
+                Report readReport = gson.fromJson(new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(reportJson))), Report.class);
+                log.info("RESULT reports test suites size {}", readReport.getTestSuites().size());
+                monitoring.stop();
+                Assertions.assertEquals(EXPECTED, readReport.getTestSuites().size());
+                monitoring.shutdown();
+            } catch (Exception ex) {
+               ex.printStackTrace();
+               throw new RuntimeException("Can't get results", ex);
+            }
         } catch (Exception ex) {
-            ex.printStackTrace();
-            System.out.println("cant run mvn test");
+            throw new RuntimeException("cant run mvn test", ex);
         }
-        Assertions.assertEquals(testSuites.size(), 48);
+
     }
 
     private Process mvnTest(String dir) throws IOException {
@@ -219,6 +219,4 @@ public class RealTest {
 
         return normalizePath;
     }
-
-
 }

@@ -28,10 +28,10 @@ public class MonitoringMain {
         int port;
         try {
             port = Integer.parseInt(System.getProperty("com.company.monitoring.port", Integer.toString(DEFAULT_PORT)));
-            log.warn("will use port {}", port);
+            log.info("will use port {}", port);
         } catch (Exception e) {
             port = DEFAULT_PORT;
-            log.warn("will use default port {}", port);
+            log.info("will use default port {}", port);
         }
         Registry registry = LocateRegistry.createRegistry(port);
         registry.rebind(Monitoring.SERVICE_NAME, stub);

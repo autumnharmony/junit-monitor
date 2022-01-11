@@ -13,7 +13,7 @@ public class MonitoringClient {
         Monitoring monitoring = (Monitoring) registry
                 .lookup(Monitoring.SERVICE_NAME);
 
-        monitoring.assignHandler("xml", "com.company.monitoring.handlers.JunitTestReportHandler");
+//        monitoring.assignHandler("xml", "com.company.monitoring.handlers.JunitTestReportHandler");
         monitoring.monitorDir("/home/anton/spark-master/streaming/target/surefire-reports");
         monitoring.start();
 

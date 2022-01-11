@@ -5,30 +5,32 @@ import com.company.monitoring.service.task.TaskExecutor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.UUID;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
+@SuppressWarnings("rawtypes")
 @Slf4j
 public class TaskExecutorImpl<Key> implements TaskExecutor<Key> {
 
     private final ExecutorService executorService;
     private final Map<Key, Future> futures;
 
-    private ReentrantLock submitTaskLock = new ReentrantLock();
+    private final ReentrantLock submitTaskLock = new ReentrantLock();
 
 
     public TaskExecutorImpl() {
-        executorService = Executors.newCachedThreadPool();
+        executorService = Executors.newCachedThreadPool(runnable -> {
+            Thread thread = new Thread(runnable);
+            thread.setName(String.format("%s-%s", "TaskExecutorImpl", UUID.randomUUID()));
+            return thread;
+        });
         futures = new ConcurrentHashMap<>();
     }
 
     public TaskExecutorImpl(ExecutorService executorService, Map<Key, Future> futures) {
         this.executorService = executorService;
         this.futures = futures;
-
     }
 
     @Override

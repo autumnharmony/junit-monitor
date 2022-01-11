@@ -1,7 +1,5 @@
 package com.company.monitoring.service;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 

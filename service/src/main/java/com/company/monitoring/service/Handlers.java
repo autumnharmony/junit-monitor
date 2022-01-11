@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
+@SuppressWarnings("rawtypes")
 @Slf4j
 public class Handlers {
 
@@ -48,12 +49,11 @@ public class Handlers {
 
     private void loadHandlers(String mode) {
         if (HANDLERS_MODE_AUTO.equalsIgnoreCase(mode)) {
-            ServiceLoader.load(Handler.class).forEach(handler -> put(handler));
+            ServiceLoader.load(Handler.class).forEach(this::put);
         }
     }
 
     public void put(Handler<File> handler) {
-        log.debug("put type {} handler {}", handler.getType(), handler);
         put(handler.getType(), handler);
     }
 
@@ -74,8 +74,8 @@ public class Handlers {
             log.debug("put type {} handler {}", type, handler);
 
             String typeFromHandler = handler.getType();
-            if (!typeFromHandler.equals(typeFromHandler)) {
-                log.warn("Passed type {} don't match type from handler {}, will use {}", type, handler.getType(), type);
+            if (!typeFromHandler.equals(type)) {
+                log.warn("Passed type {} don't match type from handler {}, will use passed", type, typeFromHandler);
             }
             Handler put = handlerInstances.put(type, handler);
             if (put != null) {
@@ -102,9 +102,7 @@ public class Handlers {
     public Handler get(String type) {
         readWriteLock.readLock().lock();
         try {
-            Handler handlerInstance = handlerInstances.get(type);
-            if (handlerInstance != null) return handlerInstance;
-            return null;
+            return handlerInstances.get(type);
         } finally {
             readWriteLock.readLock().unlock();
         }
@@ -117,25 +115,24 @@ public class Handlers {
     }
 
     void handleEvent(Dir dir, Path path, WatchEvent<?> e) {
-        log.debug("handleEvent dir {}, path {}, event {}", dir, path, String.format("%s %s",e.kind(), e.context()));
+        log.debug("handleEvent dir {}, path {}, event {}", dir, path, String.format("%s %s", e.kind(), e.context()));
         if (ENTRY_CREATE.equals(e.kind())) {
-            handleCreatedFile(dir, path, e);
+            handleCreatedFile(dir, e);
         } else if (ENTRY_MODIFY.equals(e.kind())) {
-            handleModifiedFile(dir, path, e);
+            handleModifiedFile(dir, e);
         }
     }
 
-    private void handleCreatedFile(Dir dir, Path path, WatchEvent<?> e) {
+    private void handleCreatedFile(Dir dir, WatchEvent<?> e) {
         String fileName = e.context().toString();
         log.info("CREATED FILE name: {} in dir: {}", fileName, dir.getPath());
     }
 
-    private void handleModifiedFile(Dir dir, Path dirPath, WatchEvent<?> e) {
+    private void handleModifiedFile(Dir dir, WatchEvent<?> e) {
 
-        log.info("handleModifiedFile dir {}, dirpath {}, event {}", dir, dirPath, String.format("%s %s",e.kind(), e.context()));
+        log.info("handleModifiedFile dir {}, event {}", dir, String.format("%s %s", e.kind(), e.context()));
         String fileName = e.context().toString();
         String fileExt = Utils.getExtension(fileName);
-        Path filePath = Paths.get(dirPath.toString(), fileName);
         try {
             Handler handler = get(fileExt);
 
