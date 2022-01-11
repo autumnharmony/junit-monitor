@@ -3,7 +3,6 @@ package com.company.monitoring.api;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
-import lombok.ToString;
 
 /**
  * Test case info

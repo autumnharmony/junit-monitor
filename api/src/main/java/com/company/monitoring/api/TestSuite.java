@@ -1,6 +1,5 @@
 package com.company.monitoring.api;
 
-import com.company.monitoring.api.TestCase;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;

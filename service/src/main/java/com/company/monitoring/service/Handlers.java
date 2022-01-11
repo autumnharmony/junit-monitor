@@ -111,13 +111,13 @@ public class Handlers {
     }
 
     public void handleEvents(Dir dir, Path path, List<WatchEvent<?>> watchEvents) {
-        log.debug("handleEvents dir {}, path {}, watchEvents {} ", dir, path, watchEvents);
+        log.debug("handleEvents dir {}, path {}, watchEvents {} ", dir, path, watchEvents.stream().map(we -> String.format("%s %s", we.kind(), we.context())).collect(Collectors.joining(", ")));
         List<WatchEvent<?>> collect = watchEvents.stream().filter(e -> ENTRY_MODIFY.equals(e.kind()) || ENTRY_CREATE.equals(e.kind())).collect(Collectors.toList());
         collect.forEach(e -> handleEvent(dir, path, e));
     }
 
     void handleEvent(Dir dir, Path path, WatchEvent<?> e) {
-        log.debug("handleEvent dir {}, path {}, event {}", dir, path, e);
+        log.debug("handleEvent dir {}, path {}, event {}", dir, path, String.format("%s %s",e.kind(), e.context()));
         if (ENTRY_CREATE.equals(e.kind())) {
             handleCreatedFile(dir, path, e);
         } else if (ENTRY_MODIFY.equals(e.kind())) {
@@ -132,7 +132,7 @@ public class Handlers {
 
     private void handleModifiedFile(Dir dir, Path dirPath, WatchEvent<?> e) {
 
-        log.info("handleModifiedFile dir {}, dirpath {}, event {}", dir, dirPath, e);
+        log.info("handleModifiedFile dir {}, dirpath {}, event {}", dir, dirPath, String.format("%s %s",e.kind(), e.context()));
         String fileName = e.context().toString();
         String fileExt = Utils.getExtension(fileName);
         Path filePath = Paths.get(dirPath.toString(), fileName);

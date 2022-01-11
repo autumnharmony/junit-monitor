@@ -8,10 +8,6 @@ import static org.openjdk.jcstress.annotations.Expect.ACCEPTABLE;
 import static org.openjdk.jcstress.annotations.Expect.FORBIDDEN;
 
 @JCStressTest
-@Outcome(id = "1", expect = ACCEPTABLE, desc = "Starting ok")
-@Outcome(id = "2", expect = ACCEPTABLE, desc = "Running ok")
-@Outcome(id = "3", expect = FORBIDDEN, desc = "Stopping not ok")
-@Outcome(id = "4", expect = FORBIDDEN, desc = "Stopped not ok")
 @State
 public class MonitoringTest3 {
 
@@ -37,7 +33,6 @@ public class MonitoringTest3 {
     public void actor2() {
         monitoring.monitorDir("/tmp/some");
     }
-
 
     @Actor
     public void actor3() {

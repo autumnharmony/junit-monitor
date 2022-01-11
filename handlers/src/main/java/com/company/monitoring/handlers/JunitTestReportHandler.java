@@ -17,7 +17,7 @@ import java.rmi.Remote;
 import java.util.function.Consumer;
 
 @Slf4j
-public class JunitTestReportHandler implements Handler<File>, Configurable, Serializable, Remote {
+public class JunitTestReportHandler implements Handler<File>, Configurable {
 
     private final SAXParserFactory factory;
     private Consumer<Report> reportConsumer = new DefaultReportConsumer();

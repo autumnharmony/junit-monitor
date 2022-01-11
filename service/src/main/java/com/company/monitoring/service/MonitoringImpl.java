@@ -26,14 +26,13 @@ public class MonitoringImpl implements Monitoring {
     private WatchService watchService;
     private final ExecutorService watchServiceExecutor;
     private final ExecutorService fsChangesExecutor;
-    private final Handlers handlers;
+    private Handlers handlers;
 
     private final Map<String, Dir> pathToDir = new ConcurrentHashMap<>();
     private final Set<Dir> dirsToRegister = ConcurrentHashMap.newKeySet();
     private final Map<Dir, WatchKey> watchKeys = new ConcurrentHashMap<>();
 
     private final AtomicBoolean needStop = new AtomicBoolean(false);
-    private final AtomicBoolean running = new AtomicBoolean(false);
 
     private final AtomicReference<State> state = new AtomicReference<>(State.STOPPED);
     private final Set<Future> futures = ConcurrentHashMap.newKeySet();
@@ -44,6 +43,14 @@ public class MonitoringImpl implements Monitoring {
 
     public AtomicReference<State> getState() {
         return state;
+    }
+
+    void setHandlers(Handlers handlers) {
+        this.handlers = handlers;
+    }
+
+    void setWatchService(WatchService watchService) {
+        this.watchService = watchService;
     }
 
     public enum State {
@@ -67,7 +74,19 @@ public class MonitoringImpl implements Monitoring {
     public MonitoringImpl() {
         handlers = new Handlers();
         fsChangesExecutor = Executors.newCachedThreadPool();
-        watchServiceExecutor = Executors.newSingleThreadExecutor();
+        watchServiceExecutor = Executors.newCachedThreadPool(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable runnable) {
+                Thread thread = new Thread(runnable);
+                thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread thread, Throwable throwable) {
+                        log.error("uncaughtException {}, {}", thread, throwable);
+                    }
+                });
+                return thread;
+            }
+        });
     }
 
 
@@ -90,12 +109,8 @@ public class MonitoringImpl implements Monitoring {
         }
     }
 
-    public AtomicBoolean getRunning() {
-        return running;
-    }
-
     public boolean isRunning() {
-        return running.get();
+        return State.RUNNING.equals(getState().get());
     }
 
     Dir createDir(String pathString) {
@@ -226,9 +241,9 @@ public class MonitoringImpl implements Monitoring {
                     }
                 }
             }
-            running.set(false);
+//            running.set(false);
         });
-        running.set(true);
+//        running.set(true);
         log.info("Server started");
 
         dirsToRegister.forEach(dir -> registerNow(dir));
@@ -328,7 +343,7 @@ public class MonitoringImpl implements Monitoring {
     }
 
     @Override
-    public void configureHandler(String type, Object[] objects){
+    public void configureHandler(String type, Object[] objects) {
         Handler handler = handlers.get(type);
         if (handler == null) {
             throw new IllegalStateException(String.format("Can't find handler for type %s", type));

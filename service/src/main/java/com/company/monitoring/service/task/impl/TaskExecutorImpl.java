@@ -39,7 +39,7 @@ public class TaskExecutorImpl<Key> implements TaskExecutor<Key> {
             log.info("submitTask " + key);
 
             if (futures.containsKey(key)) {
-                log.info("already contains such key");
+                log.info("already contains such key {}", key);
                 cancelTask(key);
             }
 
